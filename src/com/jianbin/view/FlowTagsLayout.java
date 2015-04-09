@@ -4,21 +4,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.content.Context;
+import android.database.DataSetObserver;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 
-public class FlowTagLayout extends ViewGroup {
+public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 
-	public FlowTagLayout(Context context, AttributeSet attrs, int defStyle) {
+	public FlowTagsLayout(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 	}
 
-	public FlowTagLayout(Context context, AttributeSet attrs) {
+	public FlowTagsLayout(Context context, AttributeSet attrs) {
 		this(context, attrs, 0);
 	}
 
-	public FlowTagLayout(Context context) {
+	public FlowTagsLayout(Context context) {
 		this(context, null);
 	}
 
@@ -155,6 +157,61 @@ public class FlowTagLayout extends ViewGroup {
 	@Override
 	public LayoutParams generateLayoutParams(AttributeSet attrs) {
 		return new MarginLayoutParams(getContext(), attrs);
+	}
+
+	private ArrayAdapter<?> mAdapter;
+	private DataSetObserver mDataSetObserver;
+
+	@Override
+	public ArrayAdapter<?> getAdapter() {
+		return mAdapter;
+	}
+
+	void resetList() {
+		removeAllViewsInLayout();
+		for (int i = 0; i < mAdapter.getCount(); i++) {
+			View child = mAdapter.getView(i, null, this);
+			addViewInLayout(child, i, child.getLayoutParams());
+		}
+		invalidate();
+	}
+
+	@Override
+	public void setAdapter(ArrayAdapter<?> adapter) {
+		if (mAdapter != null && mDataSetObserver != null) {
+			mAdapter.unregisterDataSetObserver(mDataSetObserver);
+		}
+
+		mAdapter = adapter;
+
+		resetList();
+
+		if (mAdapter != null) {
+
+			mDataSetObserver = new DataSetObserver() {
+				@Override
+				public void onChanged() {
+					super.onChanged();
+				}
+
+				@Override
+				public void onInvalidated() {
+					super.onInvalidated();
+				}
+			};
+			mAdapter.registerDataSetObserver(mDataSetObserver);
+		}
+
+		requestLayout();
+	}
+
+	@Override
+	public View getSelectedView() {
+		return null;
+	}
+
+	@Override
+	public void setSelection(int position) {
 	}
 
 }
