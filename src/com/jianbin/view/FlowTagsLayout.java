@@ -7,18 +7,37 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.view.ViewConfiguration;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 
 @SuppressLint("ClickableViewAccessibility")
 public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> implements
 		OnTouchListener {
+
+	// save all tags
+	private List<List<View>> mAllTags = new ArrayList<List<View>>();
+	private List<Integer> mLineHeight = new ArrayList<Integer>();
+
+	private ArrayAdapter<?> mAdapter;
+	private DataSetObserver mDataSetObserver;
+
+	// click listener
+	private OnItemClickListener mOnItemClickListener;
+	private OnItemLongClickListener mOnItemLongClickListener;
+
+	// click position
+	private int mSelectedPosition = -1;
+
+	// about touch event
+	private int mTouchMode = MotionEvent.ACTION_UP;
+	private float mTouchStartX = -1;
+	private float mTouchStartY = -1;
+	private static boolean afterLongClick = false;
 
 	public FlowTagsLayout(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
@@ -80,12 +99,6 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> implements
 				: sizeWidth, modeHeight == MeasureSpec.AT_MOST ? height
 				: sizeHeight);
 	}
-
-	/**
-	 * save all tags
-	 */
-	private List<List<View>> mAllTags = new ArrayList<List<View>>();
-	private List<Integer> mLineHeight = new ArrayList<Integer>();
 
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
@@ -161,15 +174,12 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> implements
 	}
 
 	/**
-	 * 与当前ViewGroup对应的LayoutParams
+	 * LayoutParams for this layout
 	 */
 	@Override
 	public LayoutParams generateLayoutParams(AttributeSet attrs) {
 		return new MarginLayoutParams(getContext(), attrs);
 	}
-
-	private ArrayAdapter<?> mAdapter;
-	private DataSetObserver mDataSetObserver;
 
 	@Override
 	public ArrayAdapter<?> getAdapter() {
@@ -192,7 +202,9 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> implements
 				addViewInLayout(child, i, child.getLayoutParams());
 			}
 		}
+		// Invalidate all views
 		invalidate();
+		// layout again
 		requestLayout();
 	}
 
@@ -233,49 +245,16 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> implements
 		mSelectedPosition = position;
 	}
 
-	private int mSelectedPosition = -1;
-
-	@Override
-	public boolean onKeyLongPress(int keyCode, KeyEvent event) {
-		if (!isEnabled()) {
-			return true;
-		}
-		if (isClickable() && isPressed() && mSelectedPosition >= 0
-				&& mAdapter != null && mSelectedPosition < mAdapter.getCount()) {
-
-			final View view = getChildAt(mSelectedPosition);
-			if (view != null) {
-				performItemClick(view, mSelectedPosition, view.getId());
-				view.setPressed(false);
-			}
-			setPressed(false);
-			return true;
-		}
-		return super.onKeyLongPress(keyCode, event);
-	}
-
-	private OnItemClickListener mOnItemClickListener;
-
 	@Override
 	public void setOnItemClickListener(
 			android.widget.AdapterView.OnItemClickListener listener) {
 		mOnItemClickListener = listener;
 	}
 
-	OnItemLongClickListener mOnItemLongClickListener;
-
-	boolean performLongPress(final View child, final int longPressPosition,
-			final long longPressId) {
-
-		boolean handled = false;
-		if (mOnItemLongClickListener != null) {
-			handled = mOnItemLongClickListener.onItemLongClick(
-					FlowTagsLayout.this, child, longPressPosition, longPressId);
-		}
-		if (handled) {
-			performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-		}
-		return handled;
+	@Override
+	public void setOnItemLongClickListener(
+			android.widget.AdapterView.OnItemLongClickListener listener) {
+		mOnItemLongClickListener = listener;
 	}
 
 	@Override
@@ -284,53 +263,106 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> implements
 		return super.dispatchTouchEvent(event);
 	}
 
+	Runnable mLongPressRunnable;
+
+	/**
+	 * start long press check after target time
+	 */
+	private void startLongPressCheck() {
+		// create runnable
+		if (mLongPressRunnable == null) {
+			mLongPressRunnable = new Runnable() {
+
+				@Override
+				public void run() {
+					// still pressed
+					if (mTouchMode == MotionEvent.ACTION_MOVE) {
+						mSelectedPosition = getClickChildPosition(mTouchStartX,
+								mTouchStartY);
+						if (mSelectedPosition != INVALID_POSITION) {
+							if (mOnItemLongClickListener != null
+									&& mSelectedPosition < mConvertViewCache
+											.size()) {
+								View v = mConvertViewCache
+										.get(mSelectedPosition);
+								mOnItemLongClickListener.onItemLongClick(
+										FlowTagsLayout.this, v,
+										mSelectedPosition, v.getId());
+								// set short click listener unable
+								afterLongClick = true;
+							}
+						}
+					}
+				}
+			};
+		}
+		// start long click check after target time
+		postDelayed(mLongPressRunnable, ViewConfiguration.getLongPressTimeout());
+	}
+
+	public int getClickChildPosition(float x, float y) {
+		int lineNum = mLineHeight.size();
+		float height = 0;
+		int touchLine = -1;
+		for (int i = 0; i < lineNum; i++) {
+			if (y >= height) {
+				height += mLineHeight.get(i);
+				if (y <= height) {
+					touchLine = i;
+					break;
+				}
+			}
+		}
+		if (touchLine == -1 || touchLine >= lineNum)
+			return INVALID_POSITION;
+		List<View> lineViews = mAllTags.get(touchLine);
+		int touchCol = -1;
+		int col = 0;
+		int colNum = lineViews.size();
+		for (int i = 0; i < colNum; i++) {
+			if (x > col) {
+				col += lineViews.get(i).getWidth();
+				if (x <= col) {
+					touchCol = i;
+					break;
+				}
+			}
+		}
+		if (touchCol == -1 || touchCol >= colNum)
+			return INVALID_POSITION;
+		int positon = 0;
+		for (int i = 0; i < touchLine; i++) {
+			positon += mAllTags.get(i).size();
+		}
+		positon += touchCol;
+		return positon;
+	}
+
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
-		if (event.getAction() == MotionEvent.ACTION_UP) {
-
-			int lineNum = mLineHeight.size();
-			float y = event.getY();
+		if (event.getAction() == MotionEvent.ACTION_DOWN) {
+			mTouchStartX = event.getX();
+			mTouchStartY = event.getY();
+			startLongPressCheck();
+		}
+		if (event.getAction() == MotionEvent.ACTION_UP && !afterLongClick) {
+			// could start short click event
 			float x = event.getX();
-			float height = 0;
-			int touchLine = -1;
-			for (int i = 0; i < lineNum; i++) {
-				if (y >= height) {
-					height += mLineHeight.get(i);
-					if (y <= height) {
-						touchLine = i;
-						break;
-					}
-				}
-			}
-			if (touchLine == -1 || touchLine >= lineNum)
-				return false;
-			List<View> lineViews = mAllTags.get(touchLine);
-			int touchCol = -1;
-			int col = 0;
-			int colNum = lineViews.size();
-			View clickView = null;
-			for (int i = 0; i < colNum; i++) {
-				if (x > col) {
-					col += lineViews.get(i).getWidth();
-					if (x <= col) {
-						touchCol = i;
-						clickView = lineViews.get(i);
-						break;
-					}
-				}
-			}
-			if (touchCol == -1 || touchCol >= colNum || clickView == null)
-				return false;
-			int positon = 0;
-			for (int i = 0; i < touchLine; i++) {
-				positon += mAllTags.get(i).size();
-			}
-			positon += touchCol;
-			mSelectedPosition = positon;
-			if (mOnItemClickListener != null)
+			float y = event.getY();
+			mSelectedPosition = getClickChildPosition(x, y);
+			if (mSelectedPosition != INVALID_POSITION
+					&& mOnItemClickListener != null
+					&& mSelectedPosition < mConvertViewCache.size()) {
+				View clickView = mConvertViewCache.get(mSelectedPosition);
 				mOnItemClickListener.onItemClick(this, clickView,
 						mSelectedPosition, clickView.getId());
+			}
+		} else if (event.getAction() == MotionEvent.ACTION_UP && afterLongClick) {
+			// could not start short click event
+			// set short click able
+			afterLongClick = false;
 		}
+		mTouchMode = event.getAction();
 		return true;
 	}
 }

@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
@@ -32,6 +33,10 @@ public class MainActivity extends ActionBarActivity {
 		mData.add("ARTICLE");
 		mData.add("DEVELOP");
 
+		mAdapter = new ArrayAdapter<String>(this, R.layout.tags_item,
+				R.id.btn_tags_item_text, mData);
+		mFlowTagsLayout.setAdapter(mAdapter);
+
 		mFlowTagsLayout.setOnItemClickListener(new OnItemClickListener() {
 
 			@Override
@@ -39,15 +44,24 @@ public class MainActivity extends ActionBarActivity {
 					int position, long id) {
 				Toast.makeText(MainActivity.this,
 						"you click tag " + mAdapter.getItem(position),
-						Toast.LENGTH_LONG).show();
+						Toast.LENGTH_SHORT).show();
 			}
 
 		});
-		
-		mAdapter = new ArrayAdapter<String>(this, R.layout.tags_item,
-				R.id.btn_tags_item_text, mData);
-		mFlowTagsLayout.setAdapter(mAdapter);
 
+		mFlowTagsLayout
+				.setOnItemLongClickListener(new OnItemLongClickListener() {
+
+					@Override
+					public boolean onItemLongClick(AdapterView<?> parent,
+							View view, int position, long id) {
+						Toast.makeText(MainActivity.this,
+								"long click tag " + mAdapter.getItem(position),
+								Toast.LENGTH_SHORT).show();
+						return true;
+					}
+
+				});
 	}
 
 	@Override
