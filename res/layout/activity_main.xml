@@ -8,9 +8,29 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.jianbin.flowtag.MainActivity" >
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/hello_world" />
+    <com.jianbin.view.FlowTagLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000" >
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="asdasd" />
+          <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="asd" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="sad" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="dd" />
+    </com.jianbin.view.FlowTagLayout>
 
 </RelativeLayout>
