@@ -3,17 +3,26 @@ package com.jianbin.view;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 
-public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
+@SuppressLint("ClickableViewAccessibility")
+public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> implements
+		OnTouchListener {
 
 	public FlowTagsLayout(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
+		setOnTouchListener(this);
 	}
 
 	public FlowTagsLayout(Context context, AttributeSet attrs) {
@@ -216,11 +225,112 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 
 	@Override
 	public View getSelectedView() {
-		return null;
+		return getChildAt(mSelectedPosition);
 	}
 
 	@Override
 	public void setSelection(int position) {
+		mSelectedPosition = position;
 	}
 
+	private int mSelectedPosition = -1;
+
+	@Override
+	public boolean onKeyLongPress(int keyCode, KeyEvent event) {
+		if (!isEnabled()) {
+			return true;
+		}
+		if (isClickable() && isPressed() && mSelectedPosition >= 0
+				&& mAdapter != null && mSelectedPosition < mAdapter.getCount()) {
+
+			final View view = getChildAt(mSelectedPosition);
+			if (view != null) {
+				performItemClick(view, mSelectedPosition, view.getId());
+				view.setPressed(false);
+			}
+			setPressed(false);
+			return true;
+		}
+		return super.onKeyLongPress(keyCode, event);
+	}
+
+	private OnItemClickListener mOnItemClickListener;
+
+	@Override
+	public void setOnItemClickListener(
+			android.widget.AdapterView.OnItemClickListener listener) {
+		mOnItemClickListener = listener;
+	}
+
+	OnItemLongClickListener mOnItemLongClickListener;
+
+	boolean performLongPress(final View child, final int longPressPosition,
+			final long longPressId) {
+
+		boolean handled = false;
+		if (mOnItemLongClickListener != null) {
+			handled = mOnItemLongClickListener.onItemLongClick(
+					FlowTagsLayout.this, child, longPressPosition, longPressId);
+		}
+		if (handled) {
+			performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+		}
+		return handled;
+	}
+
+	@Override
+	public boolean dispatchTouchEvent(MotionEvent event) {
+		onTouch(this, event);
+		return super.dispatchTouchEvent(event);
+	}
+
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		if (event.getAction() == MotionEvent.ACTION_UP) {
+
+			int lineNum = mLineHeight.size();
+			float y = event.getY();
+			float x = event.getX();
+			float height = 0;
+			int touchLine = -1;
+			for (int i = 0; i < lineNum; i++) {
+				if (y >= height) {
+					height += mLineHeight.get(i);
+					if (y <= height) {
+						touchLine = i;
+						break;
+					}
+				}
+			}
+			if (touchLine == -1 || touchLine >= lineNum)
+				return false;
+			List<View> lineViews = mAllTags.get(touchLine);
+			int touchCol = -1;
+			int col = 0;
+			int colNum = lineViews.size();
+			View clickView = null;
+			for (int i = 0; i < colNum; i++) {
+				if (x > col) {
+					col += lineViews.get(i).getWidth();
+					if (x <= col) {
+						touchCol = i;
+						clickView = lineViews.get(i);
+						break;
+					}
+				}
+			}
+			if (touchCol == -1 || touchCol >= colNum || clickView == null)
+				return false;
+			int positon = 0;
+			for (int i = 0; i < touchLine; i++) {
+				positon += mAllTags.get(i).size();
+			}
+			positon += touchCol;
+			mSelectedPosition = positon;
+			if (mOnItemClickListener != null)
+				mOnItemClickListener.onItemClick(this, clickView,
+						mSelectedPosition, clickView.getId());
+		}
+		return true;
+	}
 }

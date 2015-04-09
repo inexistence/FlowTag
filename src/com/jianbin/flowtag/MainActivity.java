@@ -7,7 +7,11 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.Toast;
 
 import com.jianbin.view.FlowTagsLayout;
 
@@ -15,6 +19,7 @@ public class MainActivity extends ActionBarActivity {
 	FlowTagsLayout mFlowTagsLayout;
 	ArrayAdapter<String> mAdapter;
 	List<String> mData;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -27,9 +32,22 @@ public class MainActivity extends ActionBarActivity {
 		mData.add("ARTICLE");
 		mData.add("DEVELOP");
 
+		mFlowTagsLayout.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				Toast.makeText(MainActivity.this,
+						"you click tag " + mAdapter.getItem(position),
+						Toast.LENGTH_LONG).show();
+			}
+
+		});
+		
 		mAdapter = new ArrayAdapter<String>(this, R.layout.tags_item,
 				R.id.btn_tags_item_text, mData);
 		mFlowTagsLayout.setAdapter(mAdapter);
+
 	}
 
 	@Override
