@@ -2,13 +2,18 @@
 
 Flow Tags
 
+##Preview
+
+![preview](./preview.jpg)
+
 ##Usage
 
 Use it as ListView
 
-###Example XML
+###XML Example
 
 ```xml
+<!--flow tags layout-->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -26,25 +31,39 @@ Use it as ListView
 </RelativeLayout>
 ```
 
-###Example Java
+```xml
+<!--tag item-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" >
 
-Initial
+    <Button
+        android:id="@+id/btn_tags_item_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</RelativeLayout>
+```
+
+**NOTE:** of course you can use your custom view.
+
+###Java Example
 
 ```java
+//Initialization
 mAdapter = new ArrayAdapter<String>(this, R.layout.tags_item,
 				R.id.btn_tags_item_text, new String[]{"TAG1","TAG2","TAG2","TAG3"});
 mFlowTagsLayout.setAdapter(mAdapter);
 ```
-
-Add new tag
+**NOTE:** of course you can use your custom adapter, but only array adapter now.
 
 ```java
+//Add new tag
 mAdapter.add("TAG4");
 ```
 
-set item click listener
-
 ```java
+//set item click listener
 mFlowTagsLayout.setOnItemClickListener(new OnItemClickListener() {
 
 			@Override
@@ -58,9 +77,8 @@ mFlowTagsLayout.setOnItemClickListener(new OnItemClickListener() {
 		});
 ```
 
-set item long click listener
-
 ```java
+//set item long click listener
 mFlowTagsLayout.setOnItemLongClickListener(new OnItemLongClickListener() {
 
 					@Override
