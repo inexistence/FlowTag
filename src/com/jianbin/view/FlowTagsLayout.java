@@ -6,6 +6,7 @@ import java.util.List;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -26,6 +27,16 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		measureChildren(widthMeasureSpec, heightMeasureSpec);
+	}
+
+	/**
+	 * save all tags
+	 */
+	private List<List<View>> mAllTags = new ArrayList<List<View>>();
+	private List<Integer> mLineHeight = new ArrayList<Integer>();
+
+	protected void measureChildren(int widthMeasureSpec, int heightMeasureSpec) {
 		int sizeWidth = MeasureSpec.getSize(widthMeasureSpec);
 		int modeWidth = MeasureSpec.getMode(widthMeasureSpec);
 		int sizeHeight = MeasureSpec.getSize(heightMeasureSpec);
@@ -72,14 +83,7 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 				: sizeHeight);
 	}
 
-	/**
-	 * save all tags
-	 */
-	private List<List<View>> mAllTags = new ArrayList<List<View>>();
-	private List<Integer> mLineHeight = new ArrayList<Integer>();
-
-	@Override
-	protected void onLayout(boolean changed, int l, int t, int r, int b) {
+	protected void layoutChildren() {
 		mAllTags.clear();
 		mLineHeight.clear();
 
@@ -151,6 +155,11 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 		}
 	}
 
+	@Override
+	protected void onLayout(boolean changed, int l, int t, int r, int b) {
+		layoutChildren();
+	}
+
 	/**
 	 * 与当前ViewGroup对应的LayoutParams
 	 */
@@ -167,12 +176,25 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 		return mAdapter;
 	}
 
+	private List<View> mConvertViewCache = new ArrayList<View>();
+
 	void resetList() {
 		removeAllViewsInLayout();
-		for (int i = 0; i < mAdapter.getCount(); i++) {
-			View child = mAdapter.getView(i, null, this);
-			addViewInLayout(child, i, child.getLayoutParams());
+		if (mAdapter != null) {
+			for (int i = 0; i < mAdapter.getCount(); i++) {
+				View child = null;
+				if (i < mConvertViewCache.size())
+					child = mConvertViewCache.get(i);
+				if (child == null) {
+					child = mAdapter.getView(i, null, this);
+					mConvertViewCache.add(child);
+				}
+				Log.d("FlowTagsLayout", "child==null ? " + (child == null));
+				addViewInLayout(child, i, child.getLayoutParams());
+			}
 		}
+		Log.d("FlowTagsLayout", "layout children num " + this.getChildCount());
+		requestLayout();
 		invalidate();
 	}
 
@@ -183,7 +205,6 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 		}
 
 		mAdapter = adapter;
-
 		resetList();
 
 		if (mAdapter != null) {
@@ -191,7 +212,7 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 			mDataSetObserver = new DataSetObserver() {
 				@Override
 				public void onChanged() {
-					super.onChanged();
+					resetList();
 				}
 
 				@Override
