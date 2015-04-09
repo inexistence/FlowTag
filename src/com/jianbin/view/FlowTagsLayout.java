@@ -6,7 +6,6 @@ import java.util.List;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -27,16 +26,6 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		measureChildren(widthMeasureSpec, heightMeasureSpec);
-	}
-
-	/**
-	 * save all tags
-	 */
-	private List<List<View>> mAllTags = new ArrayList<List<View>>();
-	private List<Integer> mLineHeight = new ArrayList<Integer>();
-
-	protected void measureChildren(int widthMeasureSpec, int heightMeasureSpec) {
 		int sizeWidth = MeasureSpec.getSize(widthMeasureSpec);
 		int modeWidth = MeasureSpec.getMode(widthMeasureSpec);
 		int sizeHeight = MeasureSpec.getSize(heightMeasureSpec);
@@ -46,8 +35,8 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 		int width = 0;
 		int height = 0;
 
-		int lineWidth = 0;// 行宽
-		int lineHeight = 0;// 行高
+		int lineWidth = 0;
+		int lineHeight = 0;
 
 		int cCount = getChildCount();
 
@@ -62,13 +51,13 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 			int childHeight = child.getMeasuredHeight() + lp.topMargin
 					+ lp.bottomMargin;
 
-			if (lineWidth + childWidth > sizeWidth) {// 换行
+			if (lineWidth + childWidth > sizeWidth) {// change line
 				width = Math.max(width, lineWidth);
 				lineWidth = childWidth;// reset line width
 				// record height
 				height += lineHeight;
 				lineHeight = childHeight;
-			} else {// 不换行
+			} else {// not change line
 				lineWidth += childWidth;
 				lineHeight = Math.max(lineHeight, childHeight);
 			}
@@ -83,7 +72,14 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 				: sizeHeight);
 	}
 
-	protected void layoutChildren() {
+	/**
+	 * save all tags
+	 */
+	private List<List<View>> mAllTags = new ArrayList<List<View>>();
+	private List<Integer> mLineHeight = new ArrayList<Integer>();
+
+	@Override
+	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 		mAllTags.clear();
 		mLineHeight.clear();
 
@@ -155,11 +151,6 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 		}
 	}
 
-	@Override
-	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		layoutChildren();
-	}
-
 	/**
 	 * 与当前ViewGroup对应的LayoutParams
 	 */
@@ -178,41 +169,40 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 
 	private List<View> mConvertViewCache = new ArrayList<View>();
 
-	void resetList() {
+	protected void resetChildView() {
 		removeAllViewsInLayout();
 		if (mAdapter != null) {
 			for (int i = 0; i < mAdapter.getCount(); i++) {
 				View child = null;
 				if (i < mConvertViewCache.size())
-					child = mConvertViewCache.get(i);
-				if (child == null) {
-					child = mAdapter.getView(i, null, this);
-					mConvertViewCache.add(child);
+					child = mConvertViewCache.get(i);// reuse old view
+				if (child == null) {// no view to reuse
+					child = mAdapter.getView(i, null, this);// create new view
+					mConvertViewCache.add(child);// save view
 				}
-				Log.d("FlowTagsLayout", "child==null ? " + (child == null));
 				addViewInLayout(child, i, child.getLayoutParams());
 			}
 		}
-		Log.d("FlowTagsLayout", "layout children num " + this.getChildCount());
-		requestLayout();
 		invalidate();
+		requestLayout();
 	}
 
 	@Override
 	public void setAdapter(ArrayAdapter<?> adapter) {
 		if (mAdapter != null && mDataSetObserver != null) {
+			// listen data set changed
 			mAdapter.unregisterDataSetObserver(mDataSetObserver);
 		}
 
 		mAdapter = adapter;
-		resetList();
+		resetChildView();
 
 		if (mAdapter != null) {
-
 			mDataSetObserver = new DataSetObserver() {
 				@Override
 				public void onChanged() {
-					resetList();
+					// if changed, reset child view
+					resetChildView();
 				}
 
 				@Override
@@ -222,8 +212,6 @@ public class FlowTagsLayout extends AdapterView<ArrayAdapter<?>> {
 			};
 			mAdapter.registerDataSetObserver(mDataSetObserver);
 		}
-
-		requestLayout();
 	}
 
 	@Override
