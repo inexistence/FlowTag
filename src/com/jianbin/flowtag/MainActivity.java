@@ -3,8 +3,8 @@ package com.jianbin.flowtag;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.app.Activity;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,7 +16,7 @@ import android.widget.Toast;
 
 import com.jianbin.view.FlowTagsLayout;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends Activity {
 	FlowTagsLayout mFlowTagsLayout;
 	ArrayAdapter<String> mAdapter;
 	List<String> mData;
