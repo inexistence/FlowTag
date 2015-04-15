@@ -45,7 +45,7 @@ Use it as ListView
 </RelativeLayout>
 ```
 
-**NOTE:** of course you can use your custom view.
+**NOTE:** Of course you can use your custom view.
 
 ###Java Example
 
@@ -55,7 +55,7 @@ mAdapter = new ArrayAdapter<String>(this, R.layout.tags_item,
 				R.id.btn_tags_item_text, new String[]{"TAG1","TAG2","TAG2","TAG3"});
 mFlowTagsLayout.setAdapter(mAdapter);
 ```
-**NOTE:** of course you can use your custom adapter, but only array adapter now.
+**NOTE:** Of course you can use your custom adapter.
 
 ```java
 //Add new tag
