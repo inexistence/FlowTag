@@ -11,14 +11,14 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import com.jianbin.flowtag.adapter.MyAdapter;
 import com.jianbin.view.FlowTagsLayout;
 
 public class MainActivity extends Activity {
 	FlowTagsLayout mFlowTagsLayout;
-	ArrayAdapter<String> mAdapter;
+	MyAdapter mAdapter;
 	List<String> mData;
 
 	@Override
@@ -33,17 +33,16 @@ public class MainActivity extends Activity {
 		mData.add("ARTICLE");
 		mData.add("DEVELOP");
 
-		mAdapter = new ArrayAdapter<String>(this, R.layout.tags_item,
+		mAdapter = new MyAdapter(this, R.layout.item_tag,
 				R.id.btn_tags_item_text, mData);
 		mFlowTagsLayout.setAdapter(mAdapter);
 
 		mFlowTagsLayout.setOnItemClickListener(new OnItemClickListener() {
-
 			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
+			public void onItemClick(AdapterView<?> parent, View clickView,
 					int position, long id) {
 				Toast.makeText(MainActivity.this,
-						"you click tag " + mAdapter.getItem(position),
+						"click tag " + mAdapter.getItem(position),
 						Toast.LENGTH_SHORT).show();
 			}
 
@@ -60,7 +59,6 @@ public class MainActivity extends Activity {
 								Toast.LENGTH_SHORT).show();
 						return true;
 					}
-
 				});
 	}
 

@@ -3,13 +3,11 @@ package com.jianbin.view;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnTouchListener;
 import android.view.ViewConfiguration;
 import android.widget.Adapter;
 import android.widget.AdapterView;
@@ -20,9 +18,7 @@ import android.widget.AdapterView;
  * @author »Æ½¨±ó
  * 
  */
-@SuppressLint("ClickableViewAccessibility")
-public class FlowTagsLayout extends AdapterView<Adapter> implements
-		OnTouchListener {
+public class FlowTagsLayout extends AdapterView<Adapter> {
 
 	// save all tags
 	private List<List<View>> mAllTags = new ArrayList<List<View>>();
@@ -35,8 +31,11 @@ public class FlowTagsLayout extends AdapterView<Adapter> implements
 	private OnItemClickListener mOnItemClickListener;
 	private OnItemLongClickListener mOnItemLongClickListener;
 
+	// view which is clicked
+	private View mClickView;
+
 	// click position
-	private int mSelectedPosition = -1;
+	private int mSelectedPosition = INVALID_POSITION;
 
 	// about touch event
 	private int mTouchMode = MotionEvent.ACTION_UP;
@@ -223,7 +222,6 @@ public class FlowTagsLayout extends AdapterView<Adapter> implements
 	@Override
 	public void setAdapter(Adapter adapter) {
 		if (mAdapter != null && mDataSetObserver != null) {
-			// listen data set changed
 			mAdapter.unregisterDataSetObserver(mDataSetObserver);
 		}
 
@@ -231,6 +229,7 @@ public class FlowTagsLayout extends AdapterView<Adapter> implements
 		resetChildView();
 
 		if (mAdapter != null) {
+			// listen data set changed
 			mDataSetObserver = new DataSetObserver() {
 				@Override
 				public void onChanged() {
@@ -258,20 +257,18 @@ public class FlowTagsLayout extends AdapterView<Adapter> implements
 	}
 
 	@Override
-	public void setOnItemClickListener(
-			android.widget.AdapterView.OnItemClickListener listener) {
+	public void setOnItemClickListener(OnItemClickListener listener) {
 		mOnItemClickListener = listener;
 	}
 
 	@Override
-	public void setOnItemLongClickListener(
-			android.widget.AdapterView.OnItemLongClickListener listener) {
+	public void setOnItemLongClickListener(OnItemLongClickListener listener) {
 		mOnItemLongClickListener = listener;
 	}
 
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent event) {
-		onTouch(this, event);
+		onTouch(event);
 		return super.dispatchTouchEvent(event);
 	}
 
@@ -289,20 +286,12 @@ public class FlowTagsLayout extends AdapterView<Adapter> implements
 				public void run() {
 					// still pressed
 					if (mTouchMode == MotionEvent.ACTION_MOVE) {
-						mSelectedPosition = getClickChildPosition(mTouchStartX,
-								mTouchStartY);
-						if (mSelectedPosition != INVALID_POSITION) {
-							if (mOnItemLongClickListener != null
-									&& mSelectedPosition < mConvertViewCache
-											.size()) {
-								View v = mConvertViewCache
-										.get(mSelectedPosition);
-								mOnItemLongClickListener.onItemLongClick(
-										FlowTagsLayout.this, v,
-										mSelectedPosition, v.getId());
-								// set short click listener unable
-								afterLongClick = true;
-							}
+						if (mClickView != null) {
+							mOnItemLongClickListener.onItemLongClick(
+									FlowTagsLayout.this, mClickView,
+									mSelectedPosition, mClickView.getId());
+							// set short click listener unable
+							afterLongClick = true;
 						}
 					}
 				}
@@ -350,31 +339,38 @@ public class FlowTagsLayout extends AdapterView<Adapter> implements
 		return positon;
 	}
 
-	@Override
-	public boolean onTouch(View v, MotionEvent event) {
+	public boolean onTouch(MotionEvent event) {
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
 			mTouchStartX = event.getX();
 			mTouchStartY = event.getY();
+
+			mSelectedPosition = getClickChildPosition(mTouchStartX,
+					mTouchStartY);
+			if (mSelectedPosition != INVALID_POSITION
+					&& mOnItemClickListener != null
+					&& mSelectedPosition < mConvertViewCache.size()) {
+				mClickView = mConvertViewCache.get(mSelectedPosition);
+				mClickView.setSelected(true);
+				mClickView.setFocusable(true);
+			}
+
 			if (null != mOnItemLongClickListener)
 				startLongPressCheck();
 		}
 		if (event.getAction() == MotionEvent.ACTION_UP && !afterLongClick) {
-			// could start short click event
-			float x = event.getX();
-			float y = event.getY();
-			mSelectedPosition = getClickChildPosition(x, y);
-			if (mSelectedPosition != INVALID_POSITION
-					&& mOnItemClickListener != null
-					&& mSelectedPosition < mConvertViewCache.size()) {
-				View clickView = mConvertViewCache.get(mSelectedPosition);
-				mOnItemClickListener.onItemClick(this, clickView,
-						mSelectedPosition, clickView.getId());
+			if (mClickView != null) {
+				mOnItemClickListener.onItemClick(this, mClickView,
+						mSelectedPosition, mClickView.getId());
+				mClickView = null;
 			}
 			// cancel long click check
 			getHandler().removeCallbacks(mLongPressRunnable);
 		} else if (event.getAction() == MotionEvent.ACTION_UP && afterLongClick) {
 			// could not start short click event
 			// set short click able
+			if (mClickView != null) {
+				mClickView = null;
+			}
 			afterLongClick = false;
 		}
 		mTouchMode = event.getAction();

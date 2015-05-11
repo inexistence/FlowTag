@@ -2,8 +2,11 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" >
 
-    <Button
+    <TextView
         android:id="@+id/btn_tags_item_text"
+        android:layout_margin="5dp"
+        android:padding="10dp"
+        android:background="@drawable/bg_stroke_rec"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
