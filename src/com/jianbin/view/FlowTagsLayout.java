@@ -287,9 +287,11 @@ public class FlowTagsLayout extends AdapterView<Adapter> {
 					// still pressed
 					if (mTouchMode == MotionEvent.ACTION_MOVE) {
 						if (mClickView != null) {
-							mOnItemLongClickListener.onItemLongClick(
-									FlowTagsLayout.this, mClickView,
-									mSelectedPosition, mClickView.getId());
+							if (mOnItemLongClickListener != null) {
+								mOnItemLongClickListener.onItemLongClick(
+										FlowTagsLayout.this, mClickView,
+										mSelectedPosition, mClickView.getId());
+							}
 							// set short click listener unable
 							afterLongClick = true;
 						}
@@ -347,7 +349,6 @@ public class FlowTagsLayout extends AdapterView<Adapter> {
 			mSelectedPosition = getClickChildPosition(mTouchStartX,
 					mTouchStartY);
 			if (mSelectedPosition != INVALID_POSITION
-					&& mOnItemClickListener != null
 					&& mSelectedPosition < mConvertViewCache.size()) {
 				mClickView = mConvertViewCache.get(mSelectedPosition);
 				mClickView.setSelected(true);
@@ -359,8 +360,10 @@ public class FlowTagsLayout extends AdapterView<Adapter> {
 		}
 		if (event.getAction() == MotionEvent.ACTION_UP && !afterLongClick) {
 			if (mClickView != null) {
-				mOnItemClickListener.onItemClick(this, mClickView,
-						mSelectedPosition, mClickView.getId());
+				if (mOnItemClickListener != null) {
+					mOnItemClickListener.onItemClick(this, mClickView,
+							mSelectedPosition, mClickView.getId());
+				}
 				mClickView = null;
 			}
 			// cancel long click check
